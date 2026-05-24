@@ -1,0 +1,28 @@
+{
+  "name": "achondroplasia-monitor",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "daemon": "node index.js --daemon",
+    "migrate": "node src/db/migrations.js",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "dashboard": "node src/dashboard.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "dotenv": "^16.4.5",
+    "axios": "^1.7.7",
+    "better-sqlite3": "^11.3.0",
+    "cheerio": "^1.0.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.15",
+    "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "transform": {}
+  }
+}
