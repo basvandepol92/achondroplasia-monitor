@@ -2,5 +2,5 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "node src/db/migrations.js && node index.js --daemon"
+startCommand = "node src/db/migrations.js && node index.js"
 restartPolicyType = "always"
