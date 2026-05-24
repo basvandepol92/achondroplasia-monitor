@@ -169,6 +169,13 @@ const server = createServer((req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`Dashboard draait op http://localhost:${PORT}`);
-});
+export function startDashboard(port = PORT) {
+  server.listen(port, () => {
+    console.log(`[dashboard] Draait op http://localhost:${port}`);
+  });
+}
+
+// Standalone: `npm run dashboard`
+if (process.argv[1].endsWith('dashboard.js')) {
+  startDashboard(PORT);
+}
