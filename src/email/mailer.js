@@ -1,18 +1,6 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { buildEmail } from './template.js';
 import { getUnemailedItems, markAsEmailed } from '../db/database.js';
-
-function createTransport() {
-  return nodemailer.createTransport({
-    host:   process.env.SMTP_HOST,
-    port:   parseInt(process.env.SMTP_PORT ?? '587', 10),
-    secure: process.env.SMTP_PORT === '465',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-}
 
 /**
  * Send the daily digest if there are unemailed items.
@@ -28,14 +16,18 @@ export async function sendDigest(statusChanges = []) {
   }
 
   const { subject, html } = buildEmail(items, statusChanges);
-  const transport = createTransport();
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
-  await transport.sendMail({
+  const { error } = await resend.emails.send({
     from:    process.env.EMAIL_FROM,
     to:      process.env.EMAIL_TO,
     subject,
     html,
   });
+
+  if (error) {
+    throw new Error(`Resend error: ${error.message}`);
+  }
 
   markAsEmailed(items.map(i => i.id));
 
