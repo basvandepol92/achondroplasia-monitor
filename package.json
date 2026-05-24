@@ -2,6 +2,9 @@
   "name": "achondroplasia-monitor",
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node index.js",
     "daemon": "node index.js --daemon",
