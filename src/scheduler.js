@@ -1,10 +1,13 @@
 import cron from 'node-cron';
+import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { Resend } from 'resend';
 import { fetch as fetchClinicalTrials } from './fetchers/clinicaltrials.js';
 import { fetch as fetchPubMed } from './fetchers/pubmed.js';
 import { fetch as fetchEdgar } from './fetchers/edgar.js';
 import { fetch as fetchRss } from './fetchers/rss.js';
 import { fetch as fetchScraper } from './fetchers/scraper.js';
 import { fetch as fetchCtis } from './fetchers/ctis.js';
+import { fetch as fetchWhoIctrp } from './fetchers/whoictrp.js';
 import { upsertItem, getRecentSourceCounts } from './db/database.js';
 import { sendDigest } from './email/mailer.js';
 
@@ -15,10 +18,27 @@ const FETCHERS = [
   { name: 'rss',            fn: fetchRss },
   { name: 'scraper',        fn: fetchScraper },
   { name: 'ctis',           fn: fetchCtis },
+  { name: 'whoictrp',       fn: fetchWhoIctrp },
 ];
 
-// Track consecutive zero-result counts per source for break detection
-const zeroStreak = {};
+const STREAKS_FILE = (process.env.DB_PATH ?? './data/monitor.db').replace(/[^/\\]+$/, 'zero_streaks.json');
+
+function loadStreaks() {
+  try { return JSON.parse(readFileSync(STREAKS_FILE, 'utf8')); }
+  catch { return {}; }
+}
+
+function saveStreaks(obj) {
+  try {
+    mkdirSync((process.env.DB_PATH ?? './data/monitor.db').replace(/[^/\\]+$/, ''), { recursive: true });
+    writeFileSync(STREAKS_FILE, JSON.stringify(obj));
+  } catch (err) {
+    console.warn('[scheduler] Could not persist zero streaks:', err.message);
+  }
+}
+
+// Loaded from disk so streaks survive process restarts
+const zeroStreak = loadStreaks();
 
 export async function runFetchers() {
   const timestamp = new Date().toISOString();
@@ -61,28 +81,24 @@ export async function runFetchers() {
 function checkScraperHealth(source, count) {
   if (count === 0) {
     zeroStreak[source] = (zeroStreak[source] ?? 0) + 1;
-    if (zeroStreak[source] >= 5) {
-      sendScraperAlert(source, zeroStreak[source]);
+    // Alert once at 5, then every 24 runs (~daily) as a reminder
+    const s = zeroStreak[source];
+    if (s === 5 || (s > 5 && s % 24 === 0)) {
+      sendScraperAlert(source, s);
     }
   } else {
     zeroStreak[source] = 0;
   }
+  saveStreaks(zeroStreak);
 }
 
 async function sendScraperAlert(source, streak) {
-  const nodemailer = await import('nodemailer');
-  const transport = nodemailer.default.createTransport({
-    host:   process.env.SMTP_HOST,
-    port:   parseInt(process.env.SMTP_PORT ?? '587', 10),
-    secure: process.env.SMTP_PORT === '465',
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  });
-
-  await transport.sendMail({
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  await resend.emails.send({
     from:    process.env.EMAIL_FROM,
     to:      process.env.EMAIL_TO,
-    subject: `⚠️ Achondroplasia monitor — scraper mogelijk stuk`,
-    text:    `De fetcher voor "${source}" heeft de afgelopen ${streak} runs geen items gevonden.\nDit kan betekenen dat de website z'n structuur heeft gewijzigd.\n`,
+    subject: '⚠️ Achondroplasia monitor — fetcher mogelijk stuk',
+    html:    `<p>De fetcher voor <strong>${source}</strong> heeft de afgelopen <strong>${streak}</strong> runs geen items gevonden.<br>Dit kan betekenen dat de website z'n structuur heeft gewijzigd.</p>`,
   }).catch(err => console.warn('[scheduler] Failed to send scraper alert:', err.message));
 }
 

@@ -89,6 +89,11 @@ export const SCRAPER_SOURCES = [
     url: 'https://www.endocrine.org/meetings-and-events/endo-annual-meetings',
     selectors: { items: 'article, .event', title: 'h2, h3', link: 'a', date: 'time, .date' },
   },
+  {
+    name: 'ASHG',
+    url: 'https://www.ashg.org/category/publications-news/press-releases/',
+    selectors: { items: 'article, .post', title: 'h2, h3, .entry-title', link: 'a', date: 'time, .entry-date' },
+  },
 ];
 
 export const RSS_FEEDS = [
