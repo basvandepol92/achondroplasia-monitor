@@ -5,6 +5,9 @@
  */
 export function buildEmail(items, statusChanges = []) {
   const date = new Date().toISOString().slice(0, 10);
+  const isProd = process.env.NODE_ENV === 'production';
+  const envLabel = isProd ? 'PROD' : 'TEST';
+  const envColor = isProd ? '#1a6b2e' : '#b45309';
 
   const bySource = {
     statusChanges,
@@ -15,7 +18,9 @@ export function buildEmail(items, statusChanges = []) {
   };
 
   const total = items.length + statusChanges.length;
-  const subject = `Achondroplasia update — ${date} — ${total} new item${total !== 1 ? 's' : ''}`;
+  const subject = isProd
+    ? `Achondroplasia update — ${date} — ${total} new item${total !== 1 ? 's' : ''}`
+    : `[TEST] Achondroplasia update — ${date} — ${total} new item${total !== 1 ? 's' : ''}`;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -35,6 +40,9 @@ export function buildEmail(items, statusChanges = []) {
 </style>
 </head>
 <body>
+<p style="margin:0 0 8px">
+  <span style="background:${envColor};color:#fff;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:0.5px">${envLabel}</span>
+</p>
 <h1>Achondroplasia update — ${date}</h1>
 <p>${total} new item${total !== 1 ? 's' : ''} since last digest.</p>
 
