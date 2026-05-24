@@ -10,7 +10,7 @@ function parseAge(ageStr) {
 }
 
 function isChildTrial(study) {
-  const minAge = parseAge(study.MinimumAge);
+  const minAge = parseAge(study.minimumAge);
   // Include if no min age specified, or min age is under 18
   return minAge === null || minAge < 18;
 }
