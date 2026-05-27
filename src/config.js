@@ -99,6 +99,9 @@ export const SCRAPER_SOURCES = [
 export const RSS_FEEDS = [
   { name: 'GlobeNewswire', url: 'https://www.globenewswire.com/RssFeed/keyword/achondroplasia' },
   { name: 'BusinessWire', url: 'https://feed.businesswire.com/rss/home/?rss=G1&rId=20_' },
+  { name: 'Endpoint News – FDA+', url: 'https://endpts.com/channel/fda-plus/feed/' },
+  { name: 'Endpoint News – R&D', url: 'https://endpts.com/channel/rd/feed/' },
+  { name: 'BioCentury', url: 'https://www.biocentury.com/rss' },
 ];
 
 export const CLINICALTRIALS_QUERY = {
