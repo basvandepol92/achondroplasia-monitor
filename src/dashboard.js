@@ -2,7 +2,7 @@ import { createServer } from 'http';
 import { config } from 'dotenv';
 config();
 
-import { getStats, getRecentItems, getRecentStatusChanges } from './db/database.js';
+import db, { getStats, getRecentItems, getRecentStatusChanges } from './db/database.js';
 
 const PORT = process.env.DASHBOARD_PORT ?? 3000;
 
