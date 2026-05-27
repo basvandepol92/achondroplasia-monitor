@@ -2,7 +2,7 @@ import { createServer } from 'http';
 import { config } from 'dotenv';
 config();
 
-import db, { getStats, getRecentItems, getRecentStatusChanges } from './db/database.js';
+import { getStats, getRecentItems, getRecentStatusChanges } from './db/database.js';
 
 const PORT = process.env.DASHBOARD_PORT ?? 3000;
 
@@ -193,60 +193,7 @@ function renderPage() {
 </html>`;
 }
 
-const VALID_STATUSES = ['Not recruiting', 'Recruiting', 'Completed', 'Terminated', 'Suspended', 'Pending', 'Other'];
-const statusPlaceholders = VALID_STATUSES.map(() => '?').join(',');
-
-function runCleanup() {
-  const lines = [];
-
-  const badChanges = db.prepare(`
-    SELECT COUNT(*) as n FROM status_changes sc
-    JOIN items i ON i.id = sc.item_id
-    WHERE i.source = 'whoictrp' AND sc.old_value NOT IN (${statusPlaceholders})
-  `).get(...VALID_STATUSES).n;
-  lines.push(`Valse whoictrp status_changes gevonden: ${badChanges}`);
-
-  const del1 = db.prepare(`
-    DELETE FROM status_changes WHERE id IN (
-      SELECT sc.id FROM status_changes sc
-      JOIN items i ON i.id = sc.item_id
-      WHERE i.source = 'whoictrp' AND sc.old_value NOT IN (${statusPlaceholders})
-    )
-  `).run(...VALID_STATUSES);
-  lines.push(`Verwijderd (valse whoictrp changes): ${del1.changes}`);
-
-  const del2 = db.prepare(`
-    DELETE FROM status_changes WHERE id NOT IN (
-      SELECT MIN(id) FROM status_changes GROUP BY item_id, field, new_value
-    )
-  `).run();
-  lines.push(`Verwijderd (dubbele changes): ${del2.changes}`);
-
-  const fix = db.prepare(`
-    UPDATE items SET status = NULL
-    WHERE source = 'whoictrp' AND status NOT IN (${statusPlaceholders}) AND status IS NOT NULL
-  `).run(...VALID_STATUSES);
-  lines.push(`Gereset (corrupte whoictrp status): ${fix.changes}`);
-
-  const totals = db.prepare(`SELECT COUNT(*) as n FROM status_changes`).get();
-  lines.push(`Status_changes resterend: ${totals.n}`);
-
-  return lines;
-}
-
 const server = createServer((req, res) => {
-  if (req.url === '/admin/cleanup') {
-    try {
-      const results = runCleanup();
-      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end('=== Cleanup uitgevoerd ===\n\n' + results.join('\n') + '\n\nKlaar. Verwijder dit endpoint na gebruik.');
-    } catch (err) {
-      res.writeHead(500, { 'Content-Type': 'text/plain' });
-      res.end(`Fout: ${err.message}`);
-    }
-    return;
-  }
-
   if (req.url !== '/') {
     res.writeHead(404);
     res.end('Not found');
