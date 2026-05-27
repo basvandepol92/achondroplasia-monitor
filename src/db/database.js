@@ -16,6 +16,8 @@ const stmtUpsert = db.prepare(`
     summary      = excluded.summary,
     url          = excluded.url,
     published_at = excluded.published_at,
+    status       = COALESCE(excluded.status, status),
+    phase        = COALESCE(excluded.phase, phase),
     raw_json     = excluded.raw_json
   RETURNING *
 `);

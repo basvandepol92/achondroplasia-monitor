@@ -8,6 +8,9 @@ const HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; achondroplasia-monitor
 // Trial IDs registered in major registries
 const TRIAL_ID_RE = /\b(NCT\d{8}|ISRCTN\d+|EUCTR[\w-]+|ACTRN\d+|ChiCTR[\w-]+|CTRI\/[\d/]+|NTR\d+|UMIN\d+)\b/;
 
+// Known WHO ICTRP recruitment status values
+const STATUS_RE = /\b(Not recruiting|Recruiting|Completed|Terminated|Suspended|Pending|Other)\b/i;
+
 export async function fetch() {
   const res = await axios.get(SEARCH_URL, {
     params: { searchWord: 'achondroplasia' },
@@ -38,9 +41,9 @@ export async function fetch() {
     const dateMatch = text.match(/\d{4}-\d{2}-\d{2}/g);
     const date = dateMatch ? dateMatch[dateMatch.length - 1] : null;
 
-    // Status: leading word(s) before the trial ID
-    const before  = text.slice(0, text.indexOf(id)).trim();
-    const status  = before.split(/\s{2,}/)[0].trim() || null;
+    // Status: match against known ICTRP values (avoids picking up table header text)
+    const statusMatch = text.match(STATUS_RE);
+    const status = statusMatch ? statusMatch[1] : null;
 
     items.push({
       source:       'whoictrp',

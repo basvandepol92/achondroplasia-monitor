@@ -24,6 +24,45 @@ function esc(str) {
     .replace(/"/g, '&quot;');
 }
 
+const MONTH_ABBR = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+
+function parseDate(str) {
+  if (!str) return null;
+
+  // ISO datetime: 2021-07-22T13:25:00.000Z  or  SQLite: 2026-05-27 08:33
+  // ISO date: 2023-01-11
+  const d = new Date(str);
+  if (!isNaN(d)) return d;
+
+  // "2026 Apr" or "2026 Apr 24" or "2025 Jul 17"
+  const m = str.match(/^(\d{4})\s+([A-Za-z]{3})(?:\s+(\d{1,2}))?/);
+  if (m) {
+    const month = MONTH_ABBR[m[2].toLowerCase()];
+    if (month !== undefined) {
+      return new Date(Number(m[1]), month, Number(m[3] ?? 1));
+    }
+  }
+
+  return null;
+}
+
+function formatDate(str) {
+  const d = parseDate(str);
+  if (!d) return '—';
+  const dd   = String(d.getDate()).padStart(2, '0');
+  const mm   = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
+}
+
+function sortByDateDesc(arr, dateFn) {
+  return [...arr].sort((a, b) => {
+    const da = parseDate(dateFn(a))?.getTime() ?? 0;
+    const db = parseDate(dateFn(b))?.getTime() ?? 0;
+    return db - da;
+  });
+}
+
 function renderPage() {
   const stats = getStats();
   const items = getRecentItems(100);
@@ -35,7 +74,8 @@ function renderPage() {
       <td class="num">${s.count}</td>
     </tr>`).join('');
 
-  const itemRows = items.map(item => `
+  const sortedItems = sortByDateDesc(items, i => i.published_at ?? i.created_at);
+  const itemRows = sortedItems.map(item => `
     <tr class="${item.emailed ? '' : 'unsent'}">
       <td>${SOURCE_LABELS[item.source] ?? item.source}</td>
       <td>${item.url
@@ -43,13 +83,14 @@ function renderPage() {
         : esc(item.title)}</td>
       <td>${item.status ? `<span class="badge">${esc(item.status)}</span>` : '—'}</td>
       <td>${item.phase ?? '—'}</td>
-      <td class="date">${item.published_at ?? item.created_at?.slice(0, 10) ?? '—'}</td>
+      <td class="date">${formatDate(item.published_at ?? item.created_at)}</td>
       <td>${item.emailed ? '✓' : '<span class="new">nieuw</span>'}</td>
     </tr>`).join('');
 
-  const changeRows = changes.length === 0
+  const sortedChanges = sortByDateDesc(changes, c => c.changed_at);
+  const changeRows = sortedChanges.length === 0
     ? '<tr><td colspan="5" class="empty">Geen statuswijzigingen</td></tr>'
-    : changes.map(c => `
+    : sortedChanges.map(c => `
     <tr>
       <td>${SOURCE_LABELS[c.source] ?? c.source}</td>
       <td>${c.url
@@ -57,7 +98,7 @@ function renderPage() {
         : esc(c.title)}</td>
       <td>${esc(c.field)}</td>
       <td><span class="badge old">${esc(c.old_value)}</span> → <span class="badge">${esc(c.new_value)}</span></td>
-      <td class="date">${c.changed_at?.slice(0, 16) ?? '—'}</td>
+      <td class="date">${formatDate(c.changed_at)}</td>
     </tr>`).join('');
 
   return `<!DOCTYPE html>
