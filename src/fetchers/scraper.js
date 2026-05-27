@@ -3,7 +3,7 @@ import * as cheerio from 'cheerio';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SCRAPER_SOURCES, matchesKeyword } from '../config.js';
 
-const MODEL = 'gemini-3.1-flash-lite-preview';
+const MODEL = 'gemini-3.1-flash-lite';
 const MAX_HTML_CHARS = 25000;
 
 function cleanHtml(html) {
