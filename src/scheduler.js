@@ -128,10 +128,11 @@ export function startDaemon() {
     }
   }, { timezone: TZ });
 
-  // 09:00–22:00 Amsterdam: fetch elk uur, geen e-mail
+  // 09:00–22:00 Amsterdam: fetch elk uur + stuur digest als er nieuwe items zijn
   cron.schedule('0 9-22 * * *', async () => {
     try {
-      await runFetchers();
+      const statusChanges = await runFetchers();
+      await sendDigest(statusChanges);
     } catch (err) {
       console.error('[scheduler] Fetch run failed:', err);
     }
