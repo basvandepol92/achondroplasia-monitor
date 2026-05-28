@@ -118,18 +118,8 @@ const TZ = 'Europe/Amsterdam';
 export function startDaemon() {
   console.log('[scheduler] Starting daemon...');
 
-  // 08:00 Amsterdam: fetch + stuur digest met alles wat er 's nachts is binnengekomen
-  cron.schedule('0 8 * * *', async () => {
-    try {
-      const statusChanges = await runFetchers();
-      await sendDigest(statusChanges);
-    } catch (err) {
-      console.error('[scheduler] Morning digest run failed:', err);
-    }
-  }, { timezone: TZ });
-
-  // 09:00–22:00 Amsterdam: fetch elk uur + stuur digest als er nieuwe items zijn
-  cron.schedule('0 9-22 * * *', async () => {
+  // 08:00–22:00 Amsterdam: fetch elk uur + stuur digest als er nieuwe items zijn
+  cron.schedule('0 8-22 * * *', async () => {
     try {
       const statusChanges = await runFetchers();
       await sendDigest(statusChanges);
@@ -138,5 +128,10 @@ export function startDaemon() {
     }
   }, { timezone: TZ });
 
-  console.log('[scheduler] Daemon running (Europe/Amsterdam). Fetch: 08:00–22:00 elk uur. Digest: dagelijks 08:00.');
+  // 23:00–07:00 Amsterdam: alleen healthcheck pingen zodat de monitor niet DOWN meldt
+  cron.schedule('0 23,0,1,2,3,4,5,6,7 * * *', async () => {
+    await pingHealthcheck();
+  }, { timezone: TZ });
+
+  console.log('[scheduler] Daemon running (Europe/Amsterdam). Fetch: 08:00–22:00 elk uur. Nachtelijke ping: 23:00–07:00.');
 }
