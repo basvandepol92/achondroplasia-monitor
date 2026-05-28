@@ -15,7 +15,7 @@ export async function fetch() {
       continue;
     }
 
-    for (const item of parsed.items ?? []) {
+    for (const item of parsed?.items ?? []) {
       const text = `${item.title ?? ''} ${item.contentSnippet ?? ''}`;
       if (!matchesKeyword(text)) continue;
 

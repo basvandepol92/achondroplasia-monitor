@@ -19,7 +19,8 @@ describe('rss fetcher', () => {
     });
 
     const items = await fetch();
-    expect(items).toHaveLength(2); // Two RSS feeds × 1 matching item each = 2 total
+    const feedCount = (await import('../config.js')).RSS_FEEDS.length;
+    expect(items).toHaveLength(feedCount); // One matching item per feed
     items.forEach(item => {
       expect(item.source).toBe('rss');
       expect(item.url).toContain('example.com/1');
